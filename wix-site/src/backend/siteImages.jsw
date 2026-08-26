@@ -1,0 +1,47 @@
+// =========================================================
+// BACKEND WEB MODULE — src/backend/siteImages.jsw
+// Central helper used by every page to pull "dynamic" images
+// out of the SiteImages CMS collection, keyed by a short string
+// (e.g. "hero-main", "logo", "about-founder-ajay").
+//
+// SETUP (one-time, in the Wix Editor):
+// 1. Go to CMS (Content Manager) -> Create Collection -> name it
+//    exactly: SiteImages
+// 2. Add fields:
+//      key       (Text)   — set as the collection's "unique" field
+//      image     (Image)
+//      altText   (Text)
+//      page      (Text)   — optional, e.g. "home", "about" (for
+//                           filtering/organising in the CMS table)
+// 3. Set collection permissions: Content is publicly readable
+//    (Anyone), and only Admin/Site Members can write — so anyone
+//    with Wix admin access can swap images without redeploying code.
+// 4. Add one row per image the site needs (see README.md for the
+//    full list of expected keys per page).
+// =========================================================
+
+import { Permissions, webMethod } from 'wix-web-module';
+import wixData from 'wix-data';
+
+export const fetchImageByKey = webMethod(Permissions.Anyone, async (key) => {
+    const result = await wixData.query('SiteImages')
+        .eq('key', key)
+        .limit(1)
+        .find();
+
+    if (result.items.length === 0) {
+        return null;
+    }
+    return result.items[0];
+});
+
+export const fetchImagesByPage = webMethod(Permissions.Anyone, async (page) => {
+    const result = await wixData.query('SiteImages')
+        .eq('page', page)
+        .find();
+
+    // Return as a { key: item } map for easy lookup on the page side.
+    const map = {};
+    result.items.forEach(item => { map[item.key] = item; });
+    return map;
+});
